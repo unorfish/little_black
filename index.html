@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>罗小黑：妖灵日志</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+KuaiLe&display=swap');
+        :root {
+            --bg-color: #e8f5e9;
+            --main-green: #66bb6a;
+            --text-color: #2e3d30;
+        }
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            font-family: 'ZCOOL KuaiLe', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: var(--text-color);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #game-boy {
+            width: 100%;
+            height: 100%;
+            max-width: 450px;
+            max-height: 850px;
+            background: #fff;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .scene {
+            flex: 1.5;
+            position: relative;
+            background: linear-gradient(180deg, #f1f8e9 0%, #c8e6c9 60%, #a5d6a7 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        /* 背景元素 */
+        .bg-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .cloud {
+            position: absolute;
+            background: #fff;
+            border-radius: 50px;
+            opacity: 0.8;
+            animation: drift 20s infinite linear;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: #fff;
+            border-radius: 50px;
+        }
+        @keyframes drift {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(300px); }
+        }
+        /* 粒子 */
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #76ff03;
+            border-radius: 50%;
+            animation: floatUp 4s infinite linear;
+            z-index: 5;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0); opacity: 0; }
+            20% { opacity: 1; transform: scale(1); }
+            80% { opacity: 1; }
+            100% { transform: translateY(-150px) scale(0.5); opacity: 0; }
+        }
+        #xiaohei {
+            width: 280px;
+            height: 260px;
+            z-index: 10;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            animation: breathe 4s infinite ease-in-out;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.015) translateY(-1px); }
+        }
+        .shaking { animation: shake 0.5s infinite; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-2px) rotate(-2deg); }
+            75% { transform: translateX(2px) rotate(2deg); }
+        }
+        .bubble {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            border: 3px solid #333;
+            padding: 15px 25px;
+            border-radius: 35px;
+            font-size: 20px;
+            max-width: 85%;
+            opacity: 0;
+            transition: all 0.4s;
+            pointer-events: none;
+            z-index: 20;
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.15);
+            white-space: nowrap;
+        }
+        .bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -13px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 13px solid transparent;
+            border-top-color: #333;
+        }
+        .heixiu {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: #000;
+            border-radius: 50%;
+            animation: floatUpHeixiu 1.2s forwards;
+            pointer-events: none;
+            z-index: 15;
+        }
+        .heixiu::before, .heixiu::after {
+            content: ''; 
+            position: absolute; 
+            top: 8px; 
+            width: 5px; 
+            height: 5px; 
+            background: #fff; 
+            border-radius: 50%;
+        }
+        .heixiu::before { left: 6px; } 
+        .heixiu::after { right: 6px; }
+        @keyframes floatUpHeixiu {
+            0% { transform: translateY(0) scale(0.4); opacity: 0; }
+            40% { opacity: 1; transform: scale(1.3); }
+            100% { transform: translateY(-100px) scale(0.9); opacity: 0; }
+        }
+        .controls-area {
+            flex: 1;
+            background: #fff;
+            border-top: 5px solid #333;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-sizing: border-box;
+        }
+        .level-display {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .level-display progress {
+            width: 140px;
+            height: 16px;
+            border-radius: 8px;
+            -webkit-appearance: none;
+            background: #eee;
+            border: 1px solid #ccc;
+        }
+        .level-display progress::-webkit-progress-bar {
+            background: #eee;
+            border-radius: 8px;
+        }
+        .level-display progress::-webkit-progress-value {
+            background: linear-gradient(90deg, #42a5f5, #66bb6a);
+            border-radius: 8px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .stat-box {
+            text-align: center;
+            font-size: 14px;
+        }
+        .bar-container {
+            width: 90px;
+            height: 12px;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            margin-top: 4px;
+        }
+        .bar-fill {
+            height: 100%;
+            transition: width 0.6s ease, background 0.3s;
+        }
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            flex-grow: 1;
+        }
+        .btn {
+            border: 3px solid #333;
+            border-radius: 18px;
+            background: #fff;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.15s;
+            box-shadow: 5px 5px 0 #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            min-height: 70px;
+        }
+        .btn:active {
+            transform: translate(3px, 3px);
+            box-shadow: 2px 2px 0 #ccc;
+        }
+        .btn-icon { font-size: 22px; margin-bottom: 4px; }
+        .modal {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #fff;
+            width: 85%;
+            max-height: 75%;
+            border-radius: 25px;
+            padding: 25px;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding: 10px;
+        }
+        .item-slot {
+            width: 70px;
+            height: 70px;
+            background: #f8f8f8;
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #999;
+        }
+        .item-slot.found {
+            border: 3px solid #66bb6a;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+            color: #333;
+            transform: scale(1.05);
+        }
+        .item-slot:hover {
+            transform: scale(1.1);
+        }
+        .close-btn, .reset-btn {
+            margin-top: 20px;
+            padding: 12px 35px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 18px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .close-btn:hover, .reset-btn:hover {
+            background: #555;
+        }
+        .reset-btn {
+            background: #ef5350;
+            margin-left: 10px;
+        }
+        .reset-btn:hover {
+            background: #d32f2f;
+        }
+        #start-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #66bb6a, #42a5f5);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        #start-btn {
+            padding: 18px 45px;
+            font-size: 26px;
+            background: white;
+            color: #66bb6a;
+            border: none;
+            border-radius: 50px;
+            margin-top: 25px;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #start-btn:active {
+            transform: scale(0.95);
+        }
+        /* 尾巴动画 */
+        .tail {
+            transform-origin: 140px 145px;
+            animation: tailSway 3s infinite ease-in-out;
+        }
+        @keyframes tailSway {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(10deg); }
+        }
+        /* 瞳孔动画 */
+        .pupil.happy {
+            transform: scaleY(0.25) skewX(10deg);
+            transition: transform 0.3s;
+        }
+        .pupil.blink {
+            transform: scaleY(0.05);
+            transition: transform 0.15s;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-boy">
+        <div id="start-overlay">
+            <h1 style="font-size: 44px; margin-bottom: 15px;">罗小黑</h1>
+            <p style="font-size: 20px; opacity: 0.9;">妖灵日志 H5增强版</p>
+            <button id="start-btn">开始冒险！</button>
+            <p style="font-size: 14px; margin-top: 25px; opacity: 0.8;">开启声音，聆听小黑的喵语～</p>
+        </div>
+        <div class="scene">
+            <div class="bg-elements" id="bg-elements"></div>
+            <div class="bubble" id="bubble">...</div>
+            <svg id="xiaohei" viewBox="0 0 280 260">
+                <defs>
+                    <radialGradient id="body-glow" cx="45%" cy="55%" r="60%">
+                        <stop offset="0%" stop-color="#252525"/>
+                        <stop offset="60%" stop-color="#0a0a0a"/>
+                        <stop offset="100%" stop-color="#000"/>
+                    </radialGradient>
+                    <radialGradient id="ear-glow" cx="50%" cy="40%" r="50%">
+                        <stop offset="0%" stop-color="#151515"/>
+                        <stop offset="100%" stop-color="#050505"/>
+                    </radialGradient>
+                </defs>
+                <g id="body-group">
+                    <!-- 身体 -->
+                    <ellipse cx="140" cy="155" rx="85" ry="75" fill="url(#body-glow)"/>
+                    <!-- 尾巴 -->
+                    <path class="tail" d="M145 165 Q165 185 185 175 Q205 165 195 145 Q185 125 175 135 Q165 155 155 165 Q145 175 145 165" fill="none" stroke="url(#body-glow)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+                    <!-- 左腿 -->
+                    <ellipse cx="105" cy="210" rx="20" ry="12" fill="#050505"/>
+                    <!-- 右腿 -->
+                    <ellipse cx="175" cy="210" rx="20" ry="12" fill="#050505"/>
+                    <!-- 左耳 -->
+                    <path d="M60 85 C45 55 35 25 42 20 C50 20 80 55 95 80" fill="url(#ear-glow)" stroke="#050505" stroke-width="3" stroke-linejoin="round"/>
+                    <!-- 右耳 -->
+                    <path d="M220 85 C235 55 245 25 238 20 C230 20 200 55 185 80" fill="url(#ear-glow)" stroke="#050505" stroke-width="3" stroke-linejoin="round"/>
+                    <!-- 左耳内 -->
+                    <path class="ear-inner" d="M68 70 Q75 60 82 70" fill="#ffc0cb" stroke="#ff99cc" stroke-width="1.5"/>
+                    <!-- 右耳内 -->
+                    <path class="ear-inner" d="M198 70 Q205 60 212 70" fill="#ffc0cb" stroke="#ff99cc" stroke-width="1.5"/>
+                    <!-- 脸部 -->
+                    <g id="face">
+                        <!-- 左眼 -->
+                        <g class="eye left-eye">
+                            <circle cx="85" cy="105" r="21" fill="#fff" stroke="#333" stroke-width="1.5"/>
+                            <g class="pupil" style="transform-origin: 85px 105px;">
+                                <circle cx="85" cy="105" r="10" fill="#76ff03"/>
+                                <circle cx="85" cy="105" r="3.5" fill="#000"/>
+                                <circle cx="90" cy="98" r="4.5" fill="#fff" opacity="0.85"/>
+                            </g>
+                        </g>
+                        <!-- 右眼 -->
+                        <g class="eye right-eye">
+                            <circle cx="195" cy="105" r="21" fill="#fff" stroke="#333" stroke-width="1.5"/>
+                            <g class="pupil" style="transform-origin: 195px 105px;">
+                                <circle cx="195" cy="105" r="10" fill="#76ff03"/>
+                                <circle cx="195" cy="105" r="3.5" fill="#000"/>
+                                <circle cx="200" cy="98" r="4.5" fill="#fff" opacity="0.85"/>
+                            </g>
+                        </g>
+                        <!-- 鼻子 -->
+                        <path d="M135 130 L138 133 L141 130 Z" fill="#ffcccb" stroke="#ff99cc" stroke-width="1"/>
+                        <!-- 嘴 -->
+                        <path id="mouth" d="M128 140 Q138 148 148 140" stroke="#555" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- 胡须 -->
+                        <g stroke="#444" stroke-width="1.8" stroke-linecap="round">
+                            <line x1="75" y1="125" x2="55" y2="127"/>
+                            <line x1="72" y1="132" x2="52" y2="133"/>
+                            <line x1="78" y1="138" x2="58" y2="139"/>
+                            <line x1="205" y1="125" x2="225" y2="127"/>
+                            <line x1="208" y1="132" x2="228" y2="133"/>
+                            <line x1="202" y1="138" x2="222" y2="139"/>
+                        </g>
+                        <!-- 腮红 -->
+                        <circle cx="60" cy="125" r="8" fill="#ff7043" opacity="0.7"/>
+                        <circle cx="220" cy="125" r="8" fill="#ff7043" opacity="0.7"/>
+                    </g>
+                </g>
+            </svg>
+        </div>
+        <div class="controls-area">
+            <div class="level-display">
+                等级 <span id="level">1</span>
+                <progress id="exp-bar" value="0" max="100"></progress>
+            </div>
+            <div class="stats">
+                <div class="stat-box">
+                    灵力
+                    <div class="bar-container"><div class="bar-fill" id="bar-energy" style="width: 80%; background: #42a5f5;"></div></div>
+                </div>
+                <div class="stat-box">
+                    饱食
+                    <div class="bar-container"><div class="bar-fill" id="bar-food" style="width: 60%; background: #ffca28;"></div></div>
+                </div>
+                <div class="stat-box">
+                    健康
+                    <div class="bar-container"><div class="bar-fill" id="bar-health" style="width: 90%; background: #66bb6a;"></div></div>
+                </div>
+                <div class="stat-box">
+                    心情
+                    <div class="bar-container"><div class="bar-fill" id="bar-mood" style="width: 50%; background: #ef5350;"></div></div>
+                </div>
+            </div>
+            <div class="action-grid">
+                <button class="btn" onclick="handleAction('pet')">
+                    <span class="btn-icon">🖐️</span> 抚摸
+                </button>
+                <button class="btn" onclick="handleAction('feed')">
+                    <span class="btn-icon">🐟</span> 喂鱼
+                </button>
+                <button class="btn" onclick="handleAction('play')">
+                    <span class="btn-icon">🏀</span> 玩耍
+                </button>
+                <button class="btn" onclick="handleAction('sleep')">
+                    <span class="btn-icon">😴</span> 睡觉
+                </button>
+                <button class="btn" onclick="handleAction('adventure')">
+                    <span class="btn-icon">🎒</span> 外出
+                </button>
+                <button class="btn" onclick="handleAction('bath')">
+                    <span class="btn-icon">🚿</span> 洗澡
+                </button>
+                <button class="btn" onclick="showInventory()" style="grid-column: span 3; font-size: 18px;">
+                    <span class="btn-icon">📦</span> 藏宝箱
+                </button>
+            </div>
+        </div>
+        <!-- 物品栏模态 -->
+        <div class="modal" id="inventory-modal">
+            <div class="modal-content">
+                <h2>小黑的藏品图鉴</h2>
+                <p style="font-size:14px; color:#666; margin-bottom:20px;">点击物品使用，解锁惊喜效果！</p>
+                <div class="inventory-grid" id="inventory-grid"></div>
+                <div>
+                    <button class="close-btn" onclick="closeModal()">返回</button>
+                    <button class="reset-btn" onclick="resetGame()">重置数据</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+    // --- 音频与语音系统 ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx, synth;
+    function initAudio() {
+        if (!audioCtx) audioCtx = new AudioContext();
+        synth = window.speechSynthesis;
+    }
+    function playSound(type) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+        switch(type) {
+            case 'meow':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(900, now);
+                osc.frequency.exponentialRampToValueAtTime(450, now + 0.2);
+                gainNode.gain.setValueAtTime(0.12, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+                break;
+            case 'pop':
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1400, now);
+                gainNode.gain.setValueAtTime(0.08, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                osc.start(now); osc.stop(now + 0.12);
+                break;
+            case 'success':
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(900, now + 0.15);
+                gainNode.gain.setValueAtTime(0.06, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now); osc.stop(now + 0.4);
+                break;
+        }
+    }
+    function speak(text) {
+        if (!synth || synth.speaking) synth.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = 'zh-CN';
+        utter.volume = 0.9;
+        utter.rate = 1.4;
+        utter.pitch = 1.6; // 高音可爱
+        synth.speak(utter);
+    }
+    // --- 游戏数据 ---
+    const gameState = {
+        energy: 80, food: 60, health: 90, mood: 50,
+        exp: 0, level: 1,
+        inventory: [],
+        isAdventuring: false
+    };
+    // 经典罗小黑台词集
+    const dialogues = {
+        pet: ['嘿咻~', '师父！', '好舒服喵~', '无限！', '摸摸头~'],
+        feed: ['鱼鱼最棒！', '好吃！', '还要鱼鱼！', '嗝~满足'],
+        play: ['追球球！', '跑跑跑~', '好玩！', '嘿嘿~'],
+        sleep: ['呼噜...', 'Zzz...', '睡啦~'],
+        bath: ['水水好凉~', '干净了！', '泡泡~'],
+        adventure_start: ['去流浪啦！', '探索去！', '冒险时间~'],
+        adventure_end_item: ['找到宝物了！', '好东西！', '带回来了~'],
+        adventure_end_hungry: ['玩得好开心，但饿了...'],
+        levelup: ['变强了！Lv Up！', '无限之力！', '嘿咻升级~'],
+        use_item: ['谢谢师父！', '好棒~', '喵呜！'],
+        low: ['饿饿...', '好累...', '不舒服...']
+    };
+    // 动作消耗/收益
+    const actionCosts = {
+        pet: { mood: 12 },
+        feed: { food: 25, mood: 8 },
+        play: { mood: 18, energy: -12, exp: 8 },
+        sleep: { energy: 35, food: -6 },
+        bath: { health: 25, mood: 12, energy: -18 },
+        adventure: { energy: -32 }
+    };
+    // 物品效果
+    const itemEffects = {
+        1: { health: 35, text: '药效发作，恢复活力！' },
+        2: { mood: 20, text: '和比丢玩耍开心！' },
+        3: { exp: 25, text: '滑板冲刺，经验+！' },
+        4: { mood: 15, text: '新T恤，好看！' },
+        5: { energy: 30, text: '天明珠灵力满满！' },
+        6: { food: 25, mood: 15, text: '冰淇淋甜蜜蜜~' }
+    };
+    const allItems = [
+        { id: 1, icon: '💊', name: '老君的药', desc: '吃完可能会变声' },
+        { id: 2, icon: '🐱', name: '比丢', desc: '不要给它吃金属！' },
+        { id: 3, icon: '🛹', name: '滑板', desc: '阿根送的礼物' },
+        { id: 4, icon: '👕', name: 'T恤', desc: '上面写着"HM"' },
+        { id: 5, icon: '💎', name: '天明珠', desc: '被抢来抢去的珠子' },
+        { id: 6, icon: '🍦', name: '冰淇淋', desc: '会被咬掉一大口' }
+    ];
+    // DOM
+    const xiaohei = document.getElementById('xiaohei');
+    const bubble = document.getElementById('bubble');
+    const bars = {
+        energy: document.getElementById('bar-energy'),
+        food: document.getElementById('bar-food'),
+        health: document.getElementById('bar-health'),
+        mood: document.getElementById('bar-mood')
+    };
+    const levelEl = document.getElementById('level');
+    const expBar = document.getElementById('exp-bar');
+    // --- 初始化 ---
+    function clamp(min, max, val) { return Math.max(min, Math.min(max, val)); }
+    function saveState() {
+        localStorage.setItem('luoxiaohei_state', JSON.stringify(gameState));
+    }
+    function loadState() {
+        const saved = localStorage.getItem('luoxiaohei_state');
+        if (saved) {
+            Object.assign(gameState, JSON.parse(saved));
+            // 夹紧值
+            ['energy','food','health','mood'].forEach(k => gameState[k] = clamp(0,100,gameState[k]));
+        }
+        updateUI();
+    }
+    // --- 核心交互 ---
+    document.getElementById('start-btn').addEventListener('click', () => {
+        initAudio();
+        document.getElementById('start-overlay').style.display = 'none';
+        playSound('success');
+        showBubble("师父！你终于来了，喵呜~");
+    });
+    xiaohei.addEventListener('click', () => handleAction('pet'));
+    function handleAction(action) {
+        if (gameState.isAdventuring) {
+            showBubble(getRandomDialogue('low'));
+            return;
+        }
+        playSound('pop');
+        const costs = actionCosts[action];
+        if (costs) {
+            // 检查消耗
+            for (let [stat, delta] of Object.entries(costs)) {
+                if (delta < 0 && gameState[stat] < -delta) {
+                    const msgs = { energy: '太累了...', food: '没力气吃...' };
+                    showBubble(msgs[stat] || '不行哦...');
+                    return;
+                }
+            }
+            // 应用效果
+            for (let [stat, delta] of Object.entries(costs)) {
+                if (stat === 'exp') {
+                    gameState[stat] += delta;
+                } else {
+                    gameState[stat] = clamp(0, 100, gameState[stat] + delta);
+                }
+            }
+        }
+        // 特殊效果
+        switch (action) {
+            case 'pet':
+                createHeixiu();
+                playSound('meow');
+                setExpression('happy');
+                setTimeout(() => setExpression('normal'), 1200);
+                break;
+            case 'play':
+            case 'bath':
+                createParticle();
+                setExpression('happy');
+                setTimeout(() => setExpression('normal'), 800);
+                break;
+            case 'sleep':
+                xiaohei.style.animation = 'none';
+                setTimeout(() => xiaohei.style.animation = 'breathe 4s infinite ease-in-out', 3000);
+                break;
+            case 'adventure':
+                if (gameState.health < 20 || gameState.energy < 30) {
+                    showBubble(gameState.health < 20 ? '生病了，不想动...' : '灵力不足...');
+                    return;
+                }
+                startAdventure();
+                return; // 不updateUI
+        }
+        checkLevelUp();
+        updateUI();
+        showBubble(getRandomDialogue(action));
+    }
+    function startAdventure() {
+        gameState.energy -= 30;
+        gameState.isAdventuring = true;
+        xiaohei.style.opacity = '0.4';
+        showBubble(getRandomDialogue('adventure_start'));
+        updateUI();
+        let count = 4;
+        const timer = setInterval(() => {
+            count--;
+            if (count <= 0) {
+                clearInterval(timer);
+                endAdventure();
+            }
+        }, 1000);
+    }
+    function endAdventure() {
+        gameState.isAdventuring = false;
+        xiaohei.style.opacity = '1';
+        playSound('success');
+        gameState.exp += 12 + Math.random() * 18;
+        const successProb = 0.4 + gameState.level * 0.08;
+        if (Math.random() < successProb) {
+            const item = allItems[Math.floor(Math.random() * allItems.length)];
+            if (!gameState.inventory.includes(item.id)) {
+                gameState.inventory.push(item.id);
+                showBubble(`${item.icon} ${getRandomDialogue('adventure_end_item')}`);
+            } else {
+                showBubble(getRandomDialogue('adventure_end_item'));
+            }
+        } else {
+            gameState.food = clamp(0, 100, gameState.food - 18);
+            showBubble(getRandomDialogue('adventure_end_hungry'));
+        }
+        checkLevelUp();
+        updateUI();
+    }
+    function checkLevelUp() {
+        const reqExp = gameState.level * 100;
+        if (gameState.exp >= reqExp) {
+            gameState.level++;
+            gameState.exp = 0;
+            playSound('success');
+            speak(getRandomDialogue('levelup'));
+            showBubble(getRandomDialogue('levelup'));
+        }
+    }
+    // --- 表情与动画 ---
+    function setExpression(type) {
+        document.querySelectorAll('.pupil').forEach(p => {
+            p.classList.remove('happy', 'blink');
+            if (type === 'happy') p.classList.add('happy');
+            else if (type === 'blink') p.classList.add('blink');
+        });
+    }
+    function createHeixiu() {
+        const h = document.createElement('div');
+        h.className = 'heixiu';
+        h.style.left = (120 + Math.random() * 140) + 'px';
+        h.style.top = (160 + Math.random() * 60) + 'px';
+        document.querySelector('.scene').appendChild(h);
+        setTimeout(() => h.remove(), 1200);
+    }
+    function createParticle() {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (3 + Math.random() * 2) + 's';
+        document.querySelector('.scene').appendChild(p);
+        setTimeout(() => p.remove(), 6000);
+    }
+    function getRandomDialogue(key) {
+        const texts = dialogues[key] || dialogues.pet;
+        return texts[Math.floor(Math.random() * texts.length)];
+    }
+    // --- UI 更新 ---
+    function updateUI() {
+        bars.energy.style.width = gameState.energy + '%';
+        bars.food.style.width = gameState.food + '%';
+        bars.health.style.width = gameState.health + '%';
+        bars.mood.style.width = gameState.mood + '%';
+        levelEl.textContent = gameState.level;
+        expBar.value = gameState.exp;
+        expBar.max = gameState.level * 100;
+        // 颜色警告
+        bars.energy.style.background = gameState.energy < 30 ? '#ef5350' : '#42a5f5';
+        bars.food.style.background = gameState.food < 30 ? '#ef5350' : '#ffca28';
+        bars.health.style.background = gameState.health < 30 ? '#ef5350' : '#66bb6a';
+        bars.mood.style.background = gameState.mood < 30 ? '#d32f2f' : '#ef5350';
+        // 低状态抖动
+        if (gameState.health < 25 || gameState.mood < 20) {
+            xiaohei.classList.add('shaking');
+        } else {
+            xiaohei.classList.remove('shaking');
+        }
+        saveState();
+    }
+    function showBubble(text) {
+        bubble.textContent = text;
+        bubble.style.opacity = '1';
+        speak(text);
+        setTimeout(() => bubble.style.opacity = '0', 3000);
+    }
+    // --- 物品栏 ---
+    function showInventory() {
+        playSound('pop');
+        const grid = document.getElementById('inventory-grid');
+        grid.innerHTML = '';
+        allItems.forEach(item => {
+            const slot = document.createElement('div');
+            slot.className = 'item-slot';
+            slot.title = item.desc;
+            if (gameState.inventory.includes(item.id)) {
+                slot.classList.add('found');
+                slot.innerHTML = item.icon;
+                slot.onclick = () => useItem(item.id);
+            } else {
+                slot.textContent = '?';
+            }
+            grid.appendChild(slot);
+        });
+        document.getElementById('inventory-modal').style.display = 'flex';
+    }
+    function useItem(id) {
+        const effect = itemEffects[id];
+        if (effect) {
+            for (let [stat, delta] of Object.entries(effect)) {
+                if (stat === 'exp') gameState[stat] += delta;
+                else gameState[stat] = clamp(0, 100, gameState[stat] + delta);
+            }
+            playSound('success');
+            showBubble(effect.text);
+            checkLevelUp();
+            updateUI();
+            speak(getRandomDialogue('use_item'));
+        }
+        closeModal();
+    }
+    function closeModal() {
+        playSound('pop');
+        document.getElementById('inventory-modal').style.display = 'none';
+    }
+    function resetGame() {
+        if (confirm('确定重置所有进度？小黑会忘记一切哦~')) {
+            localStorage.removeItem('luoxiaohei_state');
+            Object.assign(gameState, {energy:80, food:60, health:90, mood:50, exp:0, level:1, inventory:[], isAdventuring:false});
+            updateUI();
+            closeModal();
+            showBubble('一切从头开始，喵~');
+        }
+    }
+    // --- 自动系统 ---
+    // 衰减与恢复
+    setInterval(() => {
+        if (!gameState.isAdventuring) {
+            gameState.food = clamp(0, 100, gameState.food - 0.8);
+            gameState.mood = clamp(0, 100, gameState.mood - 0.4);
+            if (gameState.food < 35) gameState.health = clamp(0, 100, gameState.health - 0.6);
+            gameState.energy = clamp(0, 100, gameState.energy + 0.8);
+            updateUI();
+        }
+    }, 2000);
+    // 眨眼
+    setInterval(() => {
+        setExpression('blink');
+        setTimeout(() => setExpression('normal'), 150);
+    }, 2500 + Math.random() * 3000);
+    // 粒子背景
+    setInterval(createParticle, 4000);
+    // 闲置头动
+    setInterval(() => {
+        const tilt = (Math.random() - 0.5) * 4;
+        xiaohei.style.transform = `rotate(${tilt}deg)`;
+        setTimeout(() => xiaohei.style.transform = 'rotate(0deg)', 2000);
+    }, 8000);
+    // 云朵背景
+    function createCloud() {
+        const cloud = document.createElement('div');
+        cloud.className = 'cloud';
+        cloud.style.width = (40 + Math.random() * 30) + 'px';
+        cloud.style.height = cloud.style.width;
+        cloud.style.top = (10 + Math.random() * 40) + '%';
+        cloud.style.left = '-100px';
+        cloud.style.animationDuration = (15 + Math.random() * 10) + 's';
+        document.getElementById('bg-elements').appendChild(cloud);
+        setTimeout(() => cloud.remove(), 30000);
+    }
+    setInterval(createCloud, 5000);
+    // 启动
+    loadState();
+</script>
+</body>
+</html>
